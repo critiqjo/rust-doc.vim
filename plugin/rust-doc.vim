@@ -38,3 +38,4 @@ function s:ViewDoc_rust(topic, ...)
 endfunction
 
 let g:ViewDoc_rust = function('s:ViewDoc_rust')
+let g:ViewDoc_rustdoc = function('s:ViewDoc_rust')

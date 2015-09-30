@@ -12,37 +12,46 @@ import html2text
 with open(sys.argv[1]) as f:
   html = f.read()
 
-surround = {'active': False, 'tag': None, 'stack_len': 0, 'end_with': ''}
+def new_surround(tag, end_with='', skip_tags=[], ret_end=True):
+  return { 'tag': tag,
+           'stack_len': 1,
+           'end_with': end_with,
+           'skip_tags': skip_tags,
+           'ret_end': ret_end }
+
+surround = {}
 
 def rust_tag_handle(parser, tag, attrs, start):
   global surround
 
-  if surround['active']:
+  if len(surround) > 0:
     if start:
       surround['stack_len'] += 1
     else:
       surround['stack_len'] -= 1
+
     if surround['stack_len'] == 0:
       parser.o(surround['end_with'])
-      surround['active'] = False
-    return True
+      ret = surround['ret_end']
+      surround = {}
+      return ret
+
+    if tag in surround['skip_tags']:
+      return True
 
   if tag == 'em' and 'class' in attrs and 'stab' in attrs['class'] and start:
     parser.o("[notice] ")
-    surround['active'] = True
-    surround['tag'] = tag
-    surround['stack_len'] = 1
-    surround['end_with'] = '[/notice]'
+    surround = new_surround(tag, ' [/notice]', 'p')
     return True
 
   if ((tag == 'span' and 'class' in attrs and 'rusttest' in attrs['class']) or \
-      (tag == 'div' and 'id' in attrs and attrs['id'] == 'help')) and start:
+      ('id' in attrs and attrs['id'] == 'help')) and start:
     parser.o("[ignore] ")
-    surround['active'] = True
-    surround['tag'] = tag
-    surround['stack_len'] = 1
-    surround['end_with'] = ' [/ignore]'
+    surround = new_surround(tag, ' [/ignore]', 'p')
     return True
+
+  if tag == 'td' and 'class' in attrs and 'docblock' in attrs['class'] and start:
+    surround = new_surround(tag, '', ['p', 'em'], False)
 
 parser = html2text.HTML2Text()
 parser.tag_callback = rust_tag_handle
