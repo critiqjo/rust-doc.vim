@@ -1,11 +1,13 @@
 let s:save_cpo = &cpo
 set cpo&vim
 
-let g:rust_doc#vim_open_cmd = get(g:, 'rust_doc#vim_open_cmd', '')
-let g:rust_doc#open_cmd = get(g:, 'rust_doc#open_cmd', '')
 let g:rust_doc#do_not_ask_for_module_list = get(g:, 'rust_doc#do_not_ask_for_module_list', 0)
 let g:rust_doc#define_map_K = get(g:, 'rust_doc#define_map_K', 1)
-let g:rust_doc#downloaded_rust_doc_dir = get(g:, 'rust_doc#downloaded_rust_doc_dir', '')
+let g:rust_doc#downloaded_rust_doc_dir = get(g:, 'rust_doc#downloaded_rust_doc_dir', '/usr')
+
+function! s:open(item) abort
+    call ViewDoc('doc', a:item.name, 'rust')
+endfunction
 
 function! s:error(msg) abort
     echohl Error
@@ -37,48 +39,6 @@ function! rust_doc#find_rust_project_dir(hint) abort
     endif
 
     return fnamemodify(cargo, ':h')
-endfunction
-
-function! s:open(item) abort
-    echomsg printf("rust-doc: '%s' is found", a:item.name)
-
-    let url = shellescape(a:item.path)
-    if g:rust_doc#vim_open_cmd != ''
-        execute g:rust_doc#vim_open_cmd url
-        return
-    endif
-
-    if g:rust_doc#open_cmd != ''
-        let output = system(g:rust_doc#open_cmd . ' ' . url)
-        if v:shell_error
-            call s:error("Failed to open URL: " . output)
-        endif
-        return
-    endif
-
-    try
-        call openbrowser#open(url)
-    catch /^Vim\%((\a\+)\)\=:E117/
-        if has('win32') || has('win64')
-            let cmd = 'rundll32 url.dll,FileProtocolHandler ' . url
-        elseif executable('xdg-open') && has('unix')
-            let cmd = 'xdg-open ' . url
-        elseif executable('open') && has('mac')
-            let cmd = 'open ' . url
-        elseif executable('google-chrome')
-            let cmd = 'google-chrome ' . url
-        elseif executable('firefox')
-            let cmd = 'firefox ' . url
-        else
-            call s:error("No command is found to open URL. Please set g:rust_doc#open_cmd")
-            return
-        endif
-
-        let output = system(cmd)
-        if v:shell_error
-            call s:error("Failed to open URL: " . output)
-        endif
-    endtry
 endfunction
 
 function! rust_doc#get_doc_dirs(hint) abort
@@ -190,56 +150,35 @@ function! s:show_module_list(modules, docs, name) abort
 endfunction
 
 function! s:open_doc(docs, name) abort
-    let modules = rust_doc#get_modules(a:docs)
-    for m in modules
-        if m.name == a:name
-            call s:open(m)
-            return
-        endif
-    endfor
-
-    call s:show_module_list(modules, a:docs, a:name)
-endfunction
-
-function! s:show_identifier_list(module_name, identifiers, docs, name) abort
-    let name = a:module_name . '::' . a:name
-    if g:rust_doc#do_not_ask_for_module_list
-        call s:error(printf("No document was found for '%s'. Document dirs: %s", name, string(a:docs)))
-        return
-    endif
-
-    if empty(a:identifiers)
-        echomsg "rust-doc: No identifier is found in " . a:module_name
-        return
-    endif
-
-    if input("No document was found for '" . name . "'. Do you see the list of identifiers?(Y/n): ") =~? 'y\='
-        redraw
-        for i in a:identifiers
-            echo a:module_name . '::' . i.name
-        endfor
-    endif
+    call ViewDoc('doc', a:name, 'rust')
 endfunction
 
 function! s:open_doc_with_identifier(docs, name, identifier) abort
-    let all_modules = rust_doc#get_modules(a:docs)
+    call ViewDoc('doc', a:name . ' ' . a:identifier, 'rust')
+endfunction
+
+function! rust_doc#get_path(name, ...) abort
+    let docs = rust_doc#get_doc_dirs(s:get_hint())
+    let all_modules = rust_doc#get_modules(docs)
     let modules = filter(copy(all_modules), 'v:val["name"] == a:name')
     if empty(modules)
-        call s:show_module_list(all_modules, a:docs, a:name)
-        return
+        return ''
     endif
 
     let module = modules[0]
 
+    if a:0 == 0
+      return module.path
+    endif
+
     let identifiers = rust_doc#get_identifiers(module.path)
     for i in identifiers
-        if i.name == a:identifier
-            call s:open(i)
-            return
+        if i.name == a:1
+            return i.path
         endif
     endfor
 
-    call s:show_identifier_list(module.name, identifiers, a:docs, a:identifier)
+    return ''
 endfunction
 
 function! rust_doc#open(...) abort
@@ -304,12 +243,6 @@ function! rust_doc#open_fuzzy(identifier) abort
     call s:open_fuzzy(identifiers, a:identifier)
 endfunction
 
-function! rust_doc#open_module(name) abort
-    let docs = rust_doc#get_doc_dirs(s:get_hint())
-    let modules = rust_doc#get_modules(docs)
-    call s:open_fuzzy(modules, a:name)
-endfunction
-
 function! rust_doc#complete_cmd(arglead, cmdline, cursorpos) abort
     let args = split(a:cmdline, '\s\+', 1)
     let len = len(args)
@@ -338,22 +271,6 @@ function! rust_doc#complete_cmd(arglead, cmdline, cursorpos) abort
     endif
 
     return []
-endfunction
-
-function! rust_doc#complete_module_cmd(arglead, cmdline, cursorpos) abort
-    let args = split(a:cmdline, '\s\+', 1)
-
-    silent let docs = rust_doc#get_doc_dirs(s:get_hint())
-
-    if len(args) != 2
-        return []
-    endif
-
-    let candidates = map(rust_doc#get_modules(docs), 'v:val["name"]')
-    if args[1] !=# ''
-        let candidates = filter(candidates, 'stridx(v:val, args[1]) == 0')
-    endif
-    return sort(candidates)
 endfunction
 
 let &cpo = s:save_cpo
