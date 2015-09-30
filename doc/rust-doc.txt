@@ -95,18 +95,6 @@ As described above, 3 interfaces are available.
         :RustDocFuzzy distributions
 <
 
-    *:RustDocModule* {name}                          *rust-doc.vim-:RustDocModule*
-
-        It searches the name of modules with {name}.
-        If only one candidate is found, |rust-doc.vim| opens the document
-        instantly.  Otherwise, it lists up all candidates and you can select
-        on of them.
-
-        e.g.
->
-        :RustDocModule std::io
-<
-
 ------------------------------------------------------------------------------
 2. |K| mapping in your Rust code                          *rust-doc.vim-K-mapping*
 
@@ -132,19 +120,6 @@ As described above, 3 interfaces are available.
 
 ==============================================================================
 VARIABLES                                               *rust-doc.vim-variables*
-
-g:rust_doc#vim_open_cmd                                *g:rust_doc#vim_open_cmd*
-
-Vim command to open the path to a document.  |rust-doc.vim| uses it to open the
-document if it is not empty.  The command must take a URL to the local file.
-
-
-g:rust_doc#open_cmd                                        *g:rust_doc#open_cmd*
-
-Shell command to open the path to a document.  |rust-doc.vim| uses it to open
-the document if it is not empty.  The command must take a URL to the local
-file.
-
 
 g:rust_doc#do_not_ask_for_module_list
                                          *g:rust_doc#do_not_ask_for_module_list*

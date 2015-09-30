@@ -1,7 +1,9 @@
 Open Rust document in Vim
 =======================================
 
-![screenshot](https://raw.githubusercontent.com/rhysd/screenshots/master/rust-doc.vim/rust-doc.vim.gif)
+Uses [html2text](https://github.com/critiqjo/html2text) library to convert html docs to markdown-like format and opens it using [viewdoc plugin](https://github.com/powerman/vim-plugin-viewdoc) in vim.
+Documentation still opens up in your browser if you use `:Unite` to browse.
+
 ![unite screenshot](https://raw.githubusercontent.com/rhysd/screenshots/master/rust-doc.vim/unite-rust-doc.gif)
 
 `cargo` has a nice feature to generate document.  But it doesn't have a feature to search it yet.  This plugin searches documents (standard libraries, libraries your crate depends on, and so on) from Vim.
@@ -9,9 +11,11 @@ Open Rust document in Vim
 ## Usage
 
 - __`:RustDoc` command__
+- __`:ViewDocRust` command__
 
 ```
 :RustDoc {crate or module name} [{identifier name}]
+:ViewDocRust {crate or module name} [{identifier name}]
 ```
 
 For example, assume that your crate uses [rand](http://doc.rust-lang.org/rand/rand/index.html).
@@ -28,7 +32,7 @@ Of course you can search standard libraries.
 :RustDoc std::vec
 ```
 
-And `:RustDocFuzzy` and `:RustDocModule` are also available.  Please see [document for them](https://github.com/rhysd/rust-doc.vim/blob/master/doc/rust-doc.txt) for more detail.
+And `:RustDocFuzzy` is also available.  Please see [documentation](https://github.com/rhysd/rust-doc.vim/blob/master/doc/rust-doc.txt) for more details.
 
 
 - __Mapping `K`__
@@ -66,10 +70,20 @@ NeoBundle 'rhysd/rust-doc.vim'
 
 If you use no plugin manager, copy all directories and files in `autoload`, `plugin` and `doc` directories to your `~/.vim` directory's corresponding directories.
 
-### 2. Setup Standard Library Documents
+### 2. Install ViewDoc plugin
 
-If you want to see standard library documents, you must set `g:rust_doc#downloaded_rust_doc_dir`.
-The variable should be string type and contain the path to rust documents bundled in downloaded rust tar.
+See the [official page](https://github.com/powerman/vim-plugin-viewdoc) for details.
+
+### 3. Setup Standard Library Documents
+
+The standard library documentation is probably available with your Rust installation.
+If it is in `/usr/share/doc/rust/`, then the default setting of the global:
+
+```vim
+g:rust_doc#downloaded_rust_doc_dir " = '/usr' by default
+```
+
+will work for you. Otherwise, you must manually set it appropriately.
 
 __e.g.__:
 
@@ -88,14 +102,6 @@ let g:rust_doc#downloaded_rust_doc_dir = '~/Documents/rust-docs'
 
 
 ## Customization
-
-- `g:rust_doc#vim_open_cmd`
-
-Vim command to open the path to a document.  rust-doc.vim uses it to open the document if it is not empty.  The command must take a url to the local file.
-
-- `g:rust_doc#open_cmd`
-
-Shell command to open the path to a document.  rust-doc.vim uses it to open the document if it is not empty.  The command must take a url to the local file.
 
 - `g:rust_doc#do_not_ask_for_module_list`
 
